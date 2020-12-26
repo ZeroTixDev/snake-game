@@ -25,6 +25,10 @@ window.addEventListener('resize', () => {
 });
 let lastTime = 0;
 let hue = 160;
+function lerp(start, end, time) {
+   return start * (1 - time) + end * time;
+}
+const playerCamera = { x: snake.head.interpPos.x, y: snake.head.interpPos.y };
 (function run(time) {
    ctx.fillStyle = 'black';
    ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -49,12 +53,20 @@ let hue = 160;
    snake.interp(delta);
    checkCollision();
    boundSnake();
+   playerCamera.x = snake.head.interpPos.x;
+   playerCamera.y = snake.head.interpPos.y;
    drawSnake();
    drawFood();
    drawScore();
    requestAnimationFrame(run);
 })();
 function drawBackground() {
+   const [x, y] = [
+      Math.round(0 - playerCamera.x + canvas.width / 2),
+      Math.round(0 - playerCamera.y + canvas.height / 2),
+   ];
+   ctx.strokeStyle = 'white';
+   ctx.strokeRect(x, y, 1600, 900);
    /*ctx.strokeStyle = constants.CHECKER_COLOR;
    ctx.lineWidth = 3;
    for (let i = 0; i < canvas.width; i += constants.RESOLUTION * 2) {
@@ -74,8 +86,12 @@ function drawSnake() {
       ctx.shadowColor = color;
       ctx.shadowBlur = 20;
       ctx.lineWidth = 3;
-      ctx.fillRect(interpPos.x, interpPos.y, constants.RESOLUTION, constants.RESOLUTION);
-      ctx.strokeRect(interpPos.x, interpPos.y, constants.RESOLUTION, constants.RESOLUTION);
+      const [x, y] = [
+         Math.round(interpPos.x - playerCamera.x + canvas.width / 2),
+         Math.round(interpPos.y - playerCamera.y + canvas.height / 2),
+      ];
+      ctx.fillRect(x, y, constants.RESOLUTION, constants.RESOLUTION);
+      ctx.strokeRect(x, y, constants.RESOLUTION, constants.RESOLUTION);
    }
 }
 function boundSnake() {
@@ -112,8 +128,12 @@ function drawFood() {
    ctx.strokeStyle = constants.FOOD_COLOR;
    ctx.shadowColor = constants.FOOD_COLOR;
    ctx.lineWidth = 3;
-   ctx.fillRect(food.x, food.y, constants.RESOLUTION, constants.RESOLUTION);
-   ctx.strokeRect(food.x, food.y, constants.RESOLUTION, constants.RESOLUTION);
+   const [x, y] = [
+      Math.round(food.x - playerCamera.x + canvas.width / 2),
+      Math.round(food.y - playerCamera.y + canvas.height / 2),
+   ];
+   ctx.fillRect(x, y, constants.RESOLUTION, constants.RESOLUTION);
+   ctx.strokeRect(x, y, constants.RESOLUTION, constants.RESOLUTION);
 }
 function checkCollision() {
    if (
