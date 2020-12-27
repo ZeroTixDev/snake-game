@@ -136,12 +136,8 @@ function drawScore() {
 function drawSnake() {
    for (const { interpPos, color } of snake.body) {
       ctx.fillStyle = color;
-      ctx.strokeStyle = color;
-      ctx.shadowColor = color;
-      ctx.lineWidth = 3;
       const { x, y } = offset(interpPos.x, interpPos.y);
-      ctx.fillRect(x, y, constants.RESOLUTION, constants.RESOLUTION);
-      ctx.strokeRect(x, y, constants.RESOLUTION, constants.RESOLUTION);
+      ctx.fillRect(x - 3, y - 3, constants.RESOLUTION + 3, constants.RESOLUTION + 3);
    }
 }
 function boundSnake() {
@@ -182,11 +178,8 @@ function trackKeys(event) {
 }
 function drawFood() {
    ctx.fillStyle = constants.FOOD_COLOR;
-   ctx.strokeStyle = constants.FOOD_COLOR;
-   ctx.lineWidth = 3;
    const { x, y } = offset(food.x, food.y);
-   ctx.fillRect(x, y, constants.RESOLUTION, constants.RESOLUTION);
-   ctx.strokeRect(x, y, constants.RESOLUTION, constants.RESOLUTION);
+   ctx.fillRect(x - 3, y - 3, constants.RESOLUTION + 3, constants.RESOLUTION + 3);
 }
 function addToSnake(hue) {
    snake.append(hue);
