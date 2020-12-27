@@ -6,7 +6,7 @@ const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const plugins = [
    new HtmlWebpackPlugin({
       hash: true,
-      title: 'lol',
+      title: 'epic',
       template: './src/template.html',
       filename: './index.html',
       minify: {

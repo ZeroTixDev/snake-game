@@ -1,7 +1,8 @@
 'use strict';
 
 const SNAKE_COLOR = '#26ff00';
-const FOOD_COLOR = '#ff0000';
+const FOOD_COLOR = '#ff8800';
+const ULTRA_FOOD_COLOR = '#00fff7';
 const GAME_WIDTH = 1600;
 const GAME_HEIGHT = 900;
 const SIMULATION_RATE = 20;
@@ -17,4 +18,5 @@ module.exports = {
    SIMULATION_RATE,
    FOOD_COLOR,
    RESOLUTION,
+   ULTRA_FOOD_COLOR,
 };
