@@ -17,6 +17,7 @@ const plugins = [
    new CleanWebpackPlugin(),
    /* new BundleAnalyzerPlugin(), */
 ];
+console.log(process.env.NODE_ENV);
 module.exports = {
    entry: './src/index.js',
    mode: 'production',

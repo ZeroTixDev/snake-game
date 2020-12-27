@@ -5,6 +5,8 @@ const FOOD_COLOR = '#ff8800';
 const ULTRA_FOOD_COLOR = '#00fff7';
 const GAME_WIDTH = 1600;
 const GAME_HEIGHT = 900;
+const CANVAS_WIDTH = 1600;
+const CANVAS_HEIGHT = 900;
 const SIMULATION_RATE = 20;
 const RESOLUTION = 40;
 const BACKGROUND_COLOR = 'black';
@@ -19,4 +21,6 @@ module.exports = {
    FOOD_COLOR,
    RESOLUTION,
    ULTRA_FOOD_COLOR,
+   CANVAS_WIDTH,
+   CANVAS_HEIGHT,
 };

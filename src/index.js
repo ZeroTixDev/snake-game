@@ -3,11 +3,11 @@
 require('./style.css');
 const constants = require('./constants.js');
 const Snake = require('./snake.js');
+const Camera = require('./camera');
+const resize = require('./resize');
 const snake = new Snake();
 const canvas = document.createElement('canvas');
-canvas.width = constants.GAME_WIDTH;
-canvas.height = constants.GAME_HEIGHT;
-resize();
+resize(canvas);
 document.body.appendChild(canvas);
 const ctx = canvas.getContext('2d');
 ctx.textAlign = 'center';
@@ -17,8 +17,8 @@ const start = window.performance.now();
 let tick = 0;
 let startAnim = 0;
 let food = makeFood();
-const ultraFood = makeFood();
 let paused = false;
+let startOffset = 0;
 const controls = {
    87: 'up',
    83: 'down',
@@ -35,7 +35,7 @@ document.body.style.backgroundColor = constants.BACKGROUND_COLOR;
 window.addEventListener('keydown', trackKeys);
 window.addEventListener('keyup', trackKeys);
 window.addEventListener('resize', () => {
-   resize();
+   resize(canvas);
 });
 let lastTime = 0;
 let hue = 160;
@@ -51,8 +51,12 @@ function makeParticles() {
    }
 }
 makeParticles();
-const playerCamera = { x: 800, y: 800 };
+const playerCamera = new Camera(800, 800);
 (function run(time = 0) {
+   if (lastTime === 0 && time !== 0) {
+      startOffset = time;
+      console.log('start offset', startOffset);
+   }
    if (!paused) {
       ctx.fillStyle = 'black';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -86,16 +90,10 @@ const playerCamera = { x: 800, y: 800 };
             canvas.style.filter = 'none';
          }
       }
-      if (playerCamera) {
-         const x = (snake.head.x + snake.vel.x * constants.RESOLUTION - playerCamera.x) * delta;
-         const y = (snake.head.y + snake.vel.y * constants.RESOLUTION - playerCamera.y) * delta;
-         if (delta >= 1) {
-            playerCamera.x = snake.head.x;
-            playerCamera.y = snake.head.y;
-         } else {
-            playerCamera.x += x;
-            playerCamera.y += y;
-         }
+      if (delta >= 1) {
+         playerCamera.setTo(snake.head.x, snake.head.y);
+      } else {
+         playerCamera.interp(snake.head.x, snake.head.y, delta);
       }
       drawParticles();
       drawSnake();
@@ -104,35 +102,32 @@ const playerCamera = { x: 800, y: 800 };
    }
    requestAnimationFrame(run);
 })();
+function offset(x, y) {
+   return {
+      x: Math.round(x - playerCamera.x + canvas.width / 2),
+      y: Math.round(y - playerCamera.y + canvas.height / 2),
+   };
+}
 function drawParticles() {
    ctx.fillStyle = 'white';
    for (const particle of particles) {
-      const [x, y] = [
-         Math.round(particle.x - playerCamera.x + canvas.width / 2),
-         Math.round(particle.y - playerCamera.y + canvas.height / 2),
-      ];
+      const { x, y } = offset(particle.x, particle.y);
       ctx.beginPath();
       ctx.arc(x, y, particle.size, 0, Math.PI * 2);
       ctx.fill();
    }
 }
 function drawBackground() {
-   let [x, y] = [Math.round(0 - playerCamera.x + canvas.width / 2), Math.round(0 - playerCamera.y + canvas.height / 2)];
-   ctx.strokeStyle = 'white';
-   ctx.strokeRect(x, y, 1600, 900);
-   ctx.fillStyle = 'white';
-   [x, y] = [
-      Math.round(1575 - playerCamera.x + canvas.width / 2),
-      Math.round(950 - playerCamera.y + canvas.height / 2),
-   ];
-   ctx.fillText('by ZeroTix', x, y);
-   /*ctx.strokeStyle = constants.CHECKER_COLOR;
-   ctx.lineWidth = 3;
-   for (let i = 0; i < canvas.width; i += constants.RESOLUTION * 2) {
-      for (let j = 0; j < canvas.height; j += constants.RESOLUTION * 2) {
-         ctx.strokeRect(i, j, constants.RESOLUTION, constants.RESOLUTION);
-      }
-   }*/
+   {
+      const { x, y } = offset(0, 0);
+      ctx.strokeStyle = 'white';
+      ctx.strokeRect(x, y, 1600, 900);
+   }
+   {
+      const { x, y } = offset(1575, 950);
+      ctx.fillStyle = 'white';
+      ctx.fillText('by ZeroTix', x, y);
+   }
 }
 function drawScore() {
    ctx.fillStyle = 'white';
@@ -143,12 +138,8 @@ function drawSnake() {
       ctx.fillStyle = color;
       ctx.strokeStyle = color;
       ctx.shadowColor = color;
-      //ctx.shadowBlur = 20;
       ctx.lineWidth = 3;
-      const [x, y] = [
-         Math.round(interpPos.x - playerCamera.x + canvas.width / 2),
-         Math.round(interpPos.y - playerCamera.y + canvas.height / 2),
-      ];
+      const { x, y } = offset(interpPos.x, interpPos.y);
       ctx.fillRect(x, y, constants.RESOLUTION, constants.RESOLUTION);
       ctx.strokeRect(x, y, constants.RESOLUTION, constants.RESOLUTION);
    }
@@ -163,16 +154,6 @@ function boundSnake() {
    ) {
       snake.deadTick = 1;
    }
-}
-function resize() {
-   const winw = window.innerWidth;
-   const winh = window.innerHeight;
-   const xvalue = winw / canvas.width;
-   const yvalue = winh / canvas.height;
-   const scale = Math.min(xvalue, yvalue);
-   canvas.style.transform = 'scale(' + scale + ')';
-   canvas.style.left = (winw - canvas.width) / 2 + 'px';
-   canvas.style.top = (winh - canvas.height) / 2 + 'px';
 }
 function trackKeys(event) {
    const { keyCode } = event;
@@ -195,6 +176,7 @@ function trackKeys(event) {
       } else {
          const expectedTick = Math.ceil(((window.performance.now() - start) * constants.SIMULATION_RATE) / 1000);
          tick = expectedTick;
+         lastTime = window.performance.now() + startOffset;
       }
    }
 }
@@ -202,22 +184,9 @@ function drawFood() {
    ctx.fillStyle = constants.FOOD_COLOR;
    ctx.strokeStyle = constants.FOOD_COLOR;
    ctx.lineWidth = 3;
-   const [x, y] = [
-      Math.round(food.x - playerCamera.x + canvas.width / 2),
-      Math.round(food.y - playerCamera.y + canvas.height / 2),
-   ];
+   const { x, y } = offset(food.x, food.y);
    ctx.fillRect(x, y, constants.RESOLUTION, constants.RESOLUTION);
    ctx.strokeRect(x, y, constants.RESOLUTION, constants.RESOLUTION);
-   /* ctx.fillStyle = constants.ULTRA_FOOD_COLOR;
-   ctx.strokeStyle = constants.ULTRA_FOOD_COLOR;
-   ctx.shadowColor = constants.ULTRA_FOOD_COLOR;
-   ctx.lineWidth = 3;
-   [x, y] = [
-      Math.round(ultraFood.x - playerCamera.x + canvas.width / 2),
-      Math.round(ultraFood.y - playerCamera.y + canvas.height / 2),
-   ];
-   ctx.fillRect(x, y, constants.RESOLUTION, constants.RESOLUTION);
-   ctx.strokeRect(x, y, constants.RESOLUTION, constants.RESOLUTION);*/
 }
 function addToSnake(hue) {
    snake.append(hue);
@@ -230,20 +199,27 @@ function checkCollision() {
       snake.head.interpPos.y <= food.y + constants.RESOLUTION
    ) {
       food = makeFood();
-      hue += 20;
-      hue = hue % 360;
+      hueUpdate();
       addToSnake(hue);
    }
 }
-function makeFood() {
-   const foodLocations = [];
+function hueUpdate() {
+   hue += 20;
+   hue = hue % 360;
+}
+function findEmptySpots() {
+   const spots = [];
    for (let x = 0; x < constants.GAME_WIDTH - constants.RESOLUTION; x += constants.RESOLUTION) {
       for (let y = 0; y < constants.GAME_HEIGHT - constants.RESOLUTION; y += constants.RESOLUTION) {
          for (const body of snake.body) {
-            if (body.x !== x && body.y !== y) foodLocations.push({ x, y });
+            if (body.x !== x && body.y !== y) spots.push({ x, y });
          }
       }
    }
+   return spots;
+}
+function makeFood() {
+   const foodLocations = findEmptySpots();
    if (foodLocations.length > 0) {
       return foodLocations[Math.floor(Math.random() * foodLocations.length)];
    } else {
